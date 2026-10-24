@@ -20,8 +20,8 @@ c.execute("""CREATE TABLE IF NOT EXISTS dict (
 ####################################################
 from tkinter import *
 root = Tk()
-root.title("Урок по tkinter")
-root.geometry("400x200+700+500")
+root.title("Урок английского языка")
+root.geometry("800x200+150+150")
 
 root.mainloop()
 ####################################################
