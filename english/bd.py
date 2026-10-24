@@ -9,7 +9,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS dict (
     ru text,
     komm text
 )""")
-# c.execute("INSERT INTO dict VALUES('dddd11','eeee22', 3333, 'four444')")
+# c.execute("INSERT INTO dict VALUES(0,'english', 'russian', 'komment')")
 c.execute("SELECT * FROM dict")
 print(c.fetchall())
 db.commit()
