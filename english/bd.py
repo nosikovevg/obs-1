@@ -3,12 +3,13 @@ from tkinter import *
 db=sqlite3.connect('mydict.db')
 c=db.cursor()
 
-c.execute("""CREATE TABLE IF NOT EXISTS dict (
-    n integer PRIMARY KEY,
-    t text,
-    en text,
-    ru text,
-    komm text
+c.execute("""CREATE TABLE IF NOT EXISTS dict1 (
+    n INTEGER PRIMARY KEY AUTOINCREMENT,
+    t TEXT,
+    en TEXT,
+    ru TEXT,
+    re BOOLEAN DEFAULT 0,
+    komm TEXT
 )""")
 # способ 1
 # c.execute("INSERT INTO dict VALUES(0,'00:00:00','english', 'russian', 'komment')")
