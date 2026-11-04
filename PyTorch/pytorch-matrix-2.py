@@ -1,9 +1,9 @@
 import torch
 
-#Пример 1
+#Пример 2
 
-A = torch.tensor([[1, 2, 3], [2, 1, 4], [3, 2, 3]])
-B = torch.tensor([[1, 3, 4], [5, 7, 8], [1, 2, 4]])
+A = torch.tensor([[1], [4], [3]])
+B = torch.tensor([2, 4, 1])
 
-C = 2*A+B
+C = A@B
 print(C)
