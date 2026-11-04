@@ -43,3 +43,7 @@ print(A.ndim)
 print(A.device)
 y=torch.tensor([2., 3., 4.]).to('cuda')
 print(y.device)
+#
+t=torch.tensor([[1, 2 , 3], [4, 5, 6], [7, 8, 9]])
+s=t.shape(2)
+print(s)
