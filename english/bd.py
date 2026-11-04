@@ -1,141 +1,192 @@
 import sqlite3
 from tkinter import *
 from tkinter import messagebox, ttk
-db=sqlite3.connect('mydict.db')
-c=db.cursor()
+import random
 
-c.execute("""CREATE TABLE IF NOT EXISTS dict1 (
+db = sqlite3.connect("mydict.db")
+c = db.cursor()
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS dict1 (
     n INTEGER PRIMARY KEY AUTOINCREMENT,
     t TEXT,
     en TEXT,
     ru TEXT,
     re BOOLEAN DEFAULT 0,
     komm TEXT
-)""")
-# способ 1
-# c.execute("INSERT INTO dict VALUES(0,'00:00:00','english', 'russian', 'komment')")
+)
+""")
+db.commit()
 
-# способ 2
-# sql_req = "INSERT INTO dict VALUES(?, ?, ?, ?, ?)"
-# c.execute(sql_req, (0, '00:00:00', 'english', 'russian', 'komment'))
-#####################################
+
 def save_to_db():
-    """Берет данные из полей ввода и сохраняет в БД."""
     en_text = entry_en.get().strip()
     ru_text = entry_ru.get().strip()
+    t_text = entry_t.get().strip()
+    komm_text = entry_komm.get().strip()
+    re_value = re_var.get()
 
-    # Проверка на пустые поля
     if not en_text or not ru_text:
-        messagebox.showwarning("Внимание", "Пожалуйста, заполните оба поля!")
+        messagebox.showwarning("Внимание", "Пожалуйста, заполните поля EN и RU!")
         return
 
     try:
-        conn = sqlite3.connect("mydict.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO dict1 (en, ru, re) VALUES (?, ?, ?)", (en_text, ru_text, re_var)
+        c.execute(
+            "INSERT INTO dict1 (t, en, ru, re, komm) VALUES (?, ?, ?, ?, ?)",
+            (t_text, en_text, ru_text, re_value, komm_text)
         )
-        conn.commit()
-        conn.close()
+        db.commit()
 
-        # Очищаем поля после успешного сохранения
+        entry_t.delete(0, END)
         entry_en.delete(0, END)
         entry_ru.delete(0, END)
+        entry_komm.delete(0, END)
+        re_var.set(False)
 
+        load_table_data()
         messagebox.showinfo("Успех", "Данные успешно сохранены!")
-    except Exception as e:
-        messagebox.onerror("Ошибка", f"Не удалось сохранить данные: {e}")
 
-###################################################
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось сохранить данные: {e}")
+
+
 def load_table_data():
-    """Выбирает все данные из БД и отрисовывает их в таблице Treeview."""
-    # Сначала очищаем старые данные из виджета таблицы
     for row in tree.get_children():
         tree.delete(row)
 
     try:
-        conn = sqlite3.connect("mydict.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT n, t, en, ru, re, komm FROM dict1")
-        rows = cursor.fetchall()
-        conn.close()
+        c.execute("SELECT n, t, en, ru, re, komm FROM dict1")
+        rows = c.fetchall()
 
-        # Заполняем таблицу строками из БД
         for row in rows:
-            # Превращаем 1/0 из базы в красивый текст для отображения флажка
             re_status = "Да" if row[4] else "Нет"
-            
-            # Вставляем данные, заменяя True/False на понятный статус
             tree.insert("", END, values=(row[0], row[1], row[2], row[3], re_status, row[5]))
+
     except Exception as e:
         messagebox.showerror("Ошибка", f"Не удалось загрузить данные: {e}")
 
+def update_count():
+    try:
+        c.execute("SELECT COUNT(*) FROM dict1")
+        count = c.fetchone()[0]
+        label_count.config(text=f"Количество записей в таблице dict1: {count}")
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось получить количество записей: {e}")
+# def show_random_en():
+#     try:
+#         c.execute(
+#             "SELECT en FROM dict1 WHERE re = 0 ORDER BY RANDOM() LIMIT 1"
+#         )
+#         row = c.fetchone()
 
-####################################################
-from tkinter import *
+#         if row is None:
+#             label_random.config(text="Нет слов для повторения (все re = 1)")
+#         else:
+#             label_random.config(text=f"Случайное слово: {row[0]}")
+
+#     except Exception as e:
+#         messagebox.showerror("Ошибка", f"Не удалось выбрать случайное слово: {e}")
+
+current_random_id = None
+
+
+def show_random_en():
+    global current_random_id
+
+    try:
+        c.execute(
+            "SELECT n, en FROM dict1 WHERE re = 0 ORDER BY RANDOM() LIMIT 1"
+        )
+        row = c.fetchone()
+
+        if row is None:
+            current_random_id = None
+            label_random.config(text="Нет слов для повторения (все re = 1)")
+            btn_show_ru.config(state=DISABLED)
+        else:
+            current_random_id = row[0]
+            label_random.config(text=f"Случайное слово: {row[1]}")
+            btn_show_ru.config(state=NORMAL)
+
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось выбрать случайное слово: {e}")
+#----------------------------------------------
+def show_ru_for_current():
+    if current_random_id is None:
+        messagebox.showwarning("Внимание", "Сначала выберите случайное слово!")
+        return
+
+    try:
+        c.execute(
+            "SELECT ru FROM dict1 WHERE n = ?",
+            (current_random_id,)
+        )
+        row = c.fetchone()
+
+        if row is None:
+            label_ru_random.config(text="Перевод не найден")
+        else:
+            label_ru_random.config(text=f"Перевод: {row[0]}")
+
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось получить перевод: {e}")
+##################################################################
 root = Tk()
 root.title("Урок английского языка")
-root.geometry("800x200+150+150")
-#######################################################
-# ================= СВОЙСТВО ВКЛАДОК (NOTEBOOK) =================
+root.geometry("900x600+150+150")
+
 notebook = ttk.Notebook(root)
 notebook.pack(fill=BOTH, expand=True)
 
-# Создаем фреймы для самих вкладок
 tab1 = Frame(notebook, padx=15, pady=15)
 tab2 = Frame(notebook, padx=15, pady=15)
-
-# Добавляем фреймы в панели вкладок с названиями
+tab3 = Frame(notebook, padx=15, pady=15)
 notebook.add(tab1, text="Добавить запись")
 notebook.add(tab2, text="Просмотр базы (dict1)")
+notebook.add(tab3, text="Тренажер")
 
-#####################################################
-# Контейнер для отступов
-frame = Frame(root, padx=20, pady=20)
-frame.pack(fill=BOTH, expand=True)
+# ---------- Вкладка добавления ----------
 
-# Поле ввода для EN
-label_en = Label(tab1, text="Английское слово (en):", font=("Arial", 10))
-label_en.grid(row=0, column=0, sticky="w", pady=5)
+Label(tab1, text="Тип (t):", font=("Arial", 10)).grid(row=0, column=0, sticky="w", pady=5)
+entry_t = Entry(tab1, width=30, font=("Arial", 10))
+entry_t.grid(row=0, column=1, pady=5, padx=5)
 
-entry_en = Entry(tab1, width=25, font=("Arial", 10))
-entry_en.grid(row=0, column=1, pady=5, padx=5)
+Label(tab1, text="Английское слово (en):", font=("Arial", 10)).grid(row=1, column=0, sticky="w", pady=5)
+entry_en = Entry(tab1, width=30, font=("Arial", 10))
+entry_en.grid(row=1, column=1, pady=5, padx=5)
 
-# Поле ввода для RU
-label_ru = Label(tab1, text="Русский перевод (ru):", font=("Arial", 10))
-label_ru.grid(row=1, column=0, sticky="w", pady=5)
+Label(tab1, text="Русский перевод (ru):", font=("Arial", 10)).grid(row=2, column=0, sticky="w", pady=5)
+entry_ru = Entry(tab1, width=30, font=("Arial", 10))
+entry_ru.grid(row=2, column=1, pady=5, padx=5)
 
-entry_ru = Entry(tab1, width=25, font=("Arial", 10))
-entry_ru.grid(row=1, column=1, pady=5, padx=5)
+Label(tab1, text="Комментарий (komm):", font=("Arial", 10)).grid(row=3, column=0, sticky="w", pady=5)
+entry_komm = Entry(tab1, width=30, font=("Arial", 10))
+entry_komm.grid(row=3, column=1, pady=5, padx=5)
 
-# Кнопка сохранения
-btn_save = Button(
+re_var = BooleanVar(value=False)
+
+Checkbutton(
+    tab1,
+    text="Повторить слово (re)",
+    variable=re_var,
+    font=("Arial", 10)
+).grid(row=4, column=1, sticky="w", pady=5)
+
+Button(
     tab1,
     text="Сохранить в БД",
     command=save_to_db,
     bg="#4CAF50",
     fg="white",
-    font=("Arial", 10, "bold"),
-)
-btn_save.grid(row=2, column=0, columnspan=2, pady=20, sticky="we")
-################
-# 1. Создаем булеву переменную Tkinter (по умолчанию False / 0)
-re_var = BooleanVar(value=False)
+    font=("Arial", 10, "bold")
+).grid(row=5, column=0, columnspan=2, pady=15, sticky="we")
 
-# 2. Привязываем переменную к виджету Checkbutton через параметр variable
-check_re = Checkbutton(
-    tab1, text="Повторить слово (re)", variable=re_var, font=("Arial", 10)
-)
-check_re.grid(row=5, column=1, sticky="w", pady=5)
-###################################################
-# ================= НАПОЛНЕНИЕ ВКЛАДКИ 2 (ТАБЛИЦА) =================
-# Названия колонок для отображения
+# ---------- Вкладка просмотра ----------
+
 columns = ("n", "t", "en", "ru", "re", "komm")
 
 tree = ttk.Treeview(tab2, columns=columns, show="headings")
-tree.pack(fill=BOTH, expand=True, side=LEFT)
 
-# Настраиваем заголовки таблиц и ширину колонок
 tree.heading("n", text="ID (n)")
 tree.heading("t", text="Тип (t)")
 tree.heading("en", text="English (en)")
@@ -144,30 +195,84 @@ tree.heading("re", text="Повт. (re)")
 tree.heading("komm", text="Коммент (komm)")
 
 tree.column("n", width=50, anchor="center")
-tree.column("t", width=80)
-tree.column("en", width=120)
-tree.column("ru", width=120)
-tree.column("re", width=70, anchor="center")
-tree.column("komm", width=150)
+tree.column("t", width=100)
+tree.column("en", width=150)
+tree.column("ru", width=150)
+tree.column("re", width=80, anchor="center")
+tree.column("komm", width=200)
 
-# Скроллбар для таблицы (если записей будет много)
+tree.pack(fill=BOTH, expand=True, side=LEFT)
+
 scrollbar = ttk.Scrollbar(tab2, orient=VERTICAL, command=tree.yview)
 tree.configure(yscrollcommand=scrollbar.set)
 scrollbar.pack(fill=Y, side=RIGHT)
 
-# Кнопка ручного обновления таблицы (хотя она обновляется сама при сохранении)
-btn_refresh = Button(tab2, text="Обновить таблицу", command=load_table_data, bg="#2196F3", fg="white", font=("Arial", 9))
-btn_refresh.pack(fill=X, pady=5)
+Button(
+    tab2,
+    text="Обновить таблицу",
+    command=load_table_data,
+    bg="#2196F3",
+    fg="white",
+    font=("Arial", 9)
+).pack(fill=X, pady=5)
 
-# Первичная загрузка существующих данных при старте приложения
 load_table_data()
+# ---------- Вкладка тренажера ----------
+label_count = Label(
+    tab3,
+    text="Количество записей в таблице dict1: 0",
+    font=("Arial", 12, "bold")
+)
+label_count.pack(pady=20)
 
+Button(
+    tab3,
+    text="Обновить количество",
+    command=update_count,
+    bg="#2196F3",
+    fg="white",
+    font=("Arial", 10, "bold")
+).pack(pady=10)
 
+label_random = Label(
+    tab3,
+    text="Случайное слово: —",
+    font=("Arial", 14, "bold"),
+    wraplength=500
+)
+label_random.pack(pady=20)
 
-####################################################
+Button(
+    tab3,
+    text="Показать случайное слово (re = 0)",
+    command=show_random_en,
+    bg="#4CAF50",
+    fg="white",
+    font=("Arial", 10, "bold")
+).pack(pady=10)
+#------------------------------------------------------
+btn_show_ru = Button(
+    tab3,
+    text="Показать перевод (ru)",
+    command=show_ru_for_current,
+    bg="#FF9800",
+    fg="white",
+    font=("Arial", 10, "bold"),
+    state=DISABLED
+)
+btn_show_ru.pack(pady=10)
+
+label_ru_random = Label(
+    tab3,
+    text="Перевод: —",
+    font=("Arial", 14, "bold"),
+    wraplength=500
+)
+label_ru_random.pack(pady=10)
+
 root.mainloop()
-####################################################
+
 c.execute("SELECT * FROM dict1")
 print(c.fetchall())
-db.commit()
+
 db.close()
