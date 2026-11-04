@@ -49,3 +49,5 @@ s=t.shape[1]
 print(s)
 print(t[1,2])
 print(t[2,2].item())
+x=torch.arange(12).view(3,4)
+print(x)
