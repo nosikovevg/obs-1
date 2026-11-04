@@ -36,3 +36,10 @@ print(A.shape)  # Выведет: torch.Size([3, 1])
 
 # Способ 2: Использование метода .size()
 print(A.size())  # Выведет: torch.Size([3, 1])
+
+# Количество осей (измерений)
+print(A.ndim)
+# устройство, где лежит тензор
+print(A.device)
+y=torch.tensor([2., 3., 4.]).to('cuda')
+print(y.device)
