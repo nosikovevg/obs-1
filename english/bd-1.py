@@ -101,11 +101,11 @@ def show_random_en():
 
         if row is None:
             current_random_id = None
-            label_random.config(text="Нет слов для повторения (все re = 1)")
+            label_random_en.config(text="Нет слов для повторения (все re = 1)")
             btn_show_ru.config(state=DISABLED)
         else:
             current_random_id = row[0]
-            label_random.config(text=f"Случайное слово: {row[1]}")
+            label_random_en.config(text=f"Случайное слово: {row[1]}")
             btn_show_ru.config(state=NORMAL)
 
     except Exception as e:
@@ -130,9 +130,52 @@ def show_ru_for_current():
 
     except Exception as e:
         messagebox.showerror("Ошибка", f"Не удалось получить перевод: {e}")
+##############################################################
+def show_random_ru():
+    global current_random_id
+
+    try:
+        c.execute(
+            "SELECT n, ru FROM dict1 WHERE re = 0 ORDER BY RANDOM() LIMIT 1"
+        )
+        row = c.fetchone()
+
+        if row is None:
+            current_random_id = None
+            label_random_ru.config(text="Нет слов для повторения (все re = 1)")
+            btn_show_en.config(state=DISABLED)
+        else:
+            current_random_id = row[0]
+            label_random_ru.config(text=f"Случайное слово: {row[1]}")
+            btn_show_en.config(state=NORMAL)
+
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось выбрать случайное слово: {e}")
+#----------------------------------------------
+#----------------------------------------------
+def show_en_for_current():
+    if current_random_id is None:
+        messagebox.showwarning("Внимание", "Сначала выберите случайное слово!")
+        return
+
+    try:
+        c.execute(
+            "SELECT en FROM dict1 WHERE n = ?",
+            (current_random_id,)
+        )
+        row = c.fetchone()
+
+        if row is None:
+            label_en_random.config(text="Перевод не найден")
+        else:
+            label_en_random.config(text=f"Перевод: {row[0]}")
+
+    except Exception as e:
+        messagebox.showerror("Ошибка", f"Не удалось получить перевод: {e}")
+
 ##################################################################
 root = Tk()
-root.title("Урок английского языка")
+root.title("Урок английского языка - AUDIO")
 root.geometry("900x600+150+150")
 
 notebook = ttk.Notebook(root)
@@ -141,10 +184,11 @@ notebook.pack(fill=BOTH, expand=True)
 tab1 = Frame(notebook, padx=15, pady=15)
 tab2 = Frame(notebook, padx=15, pady=15)
 tab3 = Frame(notebook, padx=15, pady=15)
+tab4 = Frame(notebook, padx=15, pady=15)
 notebook.add(tab1, text="Добавить запись")
 notebook.add(tab2, text="Просмотр базы (dict1)")
-notebook.add(tab3, text="Тренажер")
-
+notebook.add(tab3, text="Тренажер 1")
+notebook.add(tab4, text="Тренажер 2")
 # ---------- Вкладка добавления ----------
 
 Label(tab1, text="Тип (t):", font=("Arial", 10)).grid(row=0, column=0, sticky="w", pady=5)
@@ -217,7 +261,7 @@ Button(
 ).pack(fill=X, pady=5)
 
 load_table_data()
-# ---------- Вкладка тренажера ----------
+# ---------- Вкладка тренажера 1----------
 label_count = Label(
     tab3,
     text="Количество записей в таблице dict1: 0",
@@ -234,13 +278,13 @@ Button(
     font=("Arial", 10, "bold")
 ).pack(pady=10)
 
-label_random = Label(
+label_random_en = Label(
     tab3,
     text="Случайное слово: —",
     font=("Arial", 14, "bold"),
     wraplength=500
 )
-label_random.pack(pady=20)
+label_random_en.pack(pady=20)
 
 Button(
     tab3,
@@ -269,6 +313,43 @@ label_ru_random = Label(
     wraplength=500
 )
 label_ru_random.pack(pady=10)
+
+# ---------- Вкладка тренажера 2-----------------
+label_random_ru = Label(
+    tab4,
+    text="Случайное слово: —",
+    font=("Arial", 14, "bold"),
+    wraplength=500
+)
+label_random_ru.pack(pady=20)
+
+Button(
+    tab4,
+    text="Показать случайное слово ru (re = 0)",
+    command=show_random_ru,
+    bg="#4CAF50",
+    fg="white",
+    font=("Arial", 10, "bold")
+).pack(pady=10)
+#------------------------------------------------------
+btn_show_en = Button(
+    tab4,
+    text="Показать перевод (en)",
+    command=show_en_for_current,
+    bg="#FF9800",
+    fg="white",
+    font=("Arial", 10, "bold"),
+    state=DISABLED
+)
+btn_show_en.pack(pady=10)
+label_en_random = Label(
+    tab4,
+    text="Перевод: —",
+    font=("Arial", 14, "bold"),
+    wraplength=500
+)
+label_en_random.pack(pady=10)
+
 
 root.mainloop()
 
